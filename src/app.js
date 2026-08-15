@@ -4,6 +4,7 @@ import { getProviderErrorMessage } from "./providerErrors.js";
 import {
   formatTransactionValue,
   getExplorerTransactionUrl,
+  getReceiptStatus,
   isValidTransactionHash,
   normalizeTransactionHash,
 } from "./transactions.js";
@@ -22,6 +23,7 @@ const state = {
   transactionHash: "",
   transactionMessage: "Enter a Base transaction hash.",
   transaction: null,
+  transactionReceipt: null,
   isLoadingTransaction: false,
 };
 
@@ -97,8 +99,13 @@ function render() {
 
   transactionMessage.textContent = state.transactionError || state.transactionMessage;
   transactionMessage.classList.toggle("is-error", Boolean(state.transactionError));
-  transactionStatus.textContent = state.isLoadingTransaction ? "Loading..." : "-";
-  transactionBlock.textContent = state.transaction?.blockNumber ?? "-";
+  transactionStatus.textContent = state.isLoadingTransaction
+    ? "Loading..."
+    : state.transaction
+      ? getReceiptStatus(state.transactionReceipt)
+      : "-";
+  transactionBlock.textContent =
+    state.transactionReceipt?.blockNumber ?? state.transaction?.blockNumber ?? "-";
   transactionFrom.textContent = state.transaction?.from ?? "-";
   transactionTo.textContent = state.transaction?.to ?? "-";
   transactionValue.textContent = formatTransactionValue(state.transaction);
@@ -227,6 +234,7 @@ async function lookupTransaction(hash) {
   if (!hasInjectedWallet()) {
     state.transactionError = "Connect a wallet provider before looking up transactions.";
     state.transaction = null;
+    state.transactionReceipt = null;
     render();
     return;
   }
@@ -234,6 +242,7 @@ async function lookupTransaction(hash) {
   if (!baseNetwork) {
     state.transactionError = "Switch to Base or Base Sepolia before looking up transactions.";
     state.transaction = null;
+    state.transactionReceipt = null;
     render();
     return;
   }
@@ -242,6 +251,7 @@ async function lookupTransaction(hash) {
   state.transactionError = "";
   state.transactionMessage = "Looking up transaction...";
   state.transaction = null;
+  state.transactionReceipt = null;
   render();
 
   try {
@@ -249,8 +259,15 @@ async function lookupTransaction(hash) {
       method: "eth_getTransactionByHash",
       params: [hash],
     });
+    const receipt = transaction
+      ? await window.ethereum.request({
+          method: "eth_getTransactionReceipt",
+          params: [hash],
+        })
+      : null;
 
     state.transaction = transaction;
+    state.transactionReceipt = receipt;
     state.transactionMessage = transaction
       ? "Transaction loaded from wallet provider."
       : "Transaction not found on the selected Base network.";
