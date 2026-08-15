@@ -2,6 +2,7 @@ import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
 import { formatAddress, isValidEvmAddress } from "./address.js";
+import { ERC20_CALLS, decodeStringResult, decodeUint8 } from "./erc20.js";
 import {
   formatTransactionValue,
   getExplorerTransactionUrl,
@@ -328,6 +329,62 @@ async function lookupTransaction(hash) {
   }
 }
 
+async function callContract(to, data) {
+  return window.ethereum.request({
+    method: "eth_call",
+    params: [{ to, data }, "latest"],
+  });
+}
+
+async function lookupTokenMetadata(address) {
+  const baseNetwork = getBaseNetwork(state.chainId);
+  if (!hasInjectedWallet()) {
+    state.tokenError = "Connect a wallet provider before looking up tokens.";
+    state.tokenMetadata = null;
+    render();
+    return;
+  }
+
+  if (!baseNetwork) {
+    state.tokenError = "Switch to Base or Base Sepolia before looking up tokens.";
+    state.tokenMetadata = null;
+    render();
+    return;
+  }
+
+  state.isLoadingToken = true;
+  state.tokenError = "";
+  state.tokenMessage = "Loading token metadata...";
+  state.tokenMetadata = null;
+  render();
+
+  try {
+    const [nameResult, symbolResult, decimalsResult] = await Promise.all([
+      callContract(address, ERC20_CALLS.name),
+      callContract(address, ERC20_CALLS.symbol),
+      callContract(address, ERC20_CALLS.decimals),
+    ]);
+    const metadata = {
+      name: decodeStringResult(nameResult),
+      symbol: decodeStringResult(symbolResult),
+      decimals: decodeUint8(decimalsResult),
+    };
+
+    if (!metadata.symbol || !Number.isInteger(metadata.decimals)) {
+      throw new Error("Contract does not expose standard ERC-20 metadata.");
+    }
+
+    state.tokenMetadata = metadata;
+    state.tokenMessage = "Token metadata loaded.";
+  } catch (error) {
+    state.tokenMetadata = null;
+    state.tokenError = getProviderErrorMessage(error, "Unable to load ERC-20 metadata");
+  } finally {
+    state.isLoadingToken = false;
+    render();
+  }
+}
+
 async function connectWallet() {
   if (!hasInjectedWallet()) {
     walletStatus.textContent = "No injected wallet found";
@@ -411,8 +468,7 @@ tokenForm.addEventListener("submit", (event) => {
   }
 
   state.tokenError = "";
-  state.tokenMessage = "Token address is valid.";
-  render();
+  lookupTokenMetadata(address);
 });
 
 if (hasInjectedWallet()) {
