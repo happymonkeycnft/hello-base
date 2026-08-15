@@ -1,4 +1,4 @@
-import { getBaseNetwork } from "./baseNetworks.js";
+import { getBaseNetwork, getExplorerAddressUrl } from "./baseNetworks.js";
 
 const state = {
   account: null,
@@ -18,13 +18,24 @@ function hasInjectedWallet() {
 
 function render() {
   const baseNetwork = getBaseNetwork(state.chainId);
+  const addressUrl = getExplorerAddressUrl(state.chainId, state.account);
 
   walletStatus.textContent = state.isConnecting
     ? "Connecting..."
     : state.account
       ? "Connected"
       : "Not connected";
-  walletAddress.textContent = state.account ?? "-";
+  walletAddress.textContent = "";
+  if (addressUrl) {
+    const link = document.createElement("a");
+    link.href = addressUrl;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.textContent = state.account;
+    walletAddress.append(link);
+  } else {
+    walletAddress.textContent = state.account ?? "-";
+  }
   networkName.textContent = baseNetwork?.name ?? (state.chainId ? "Unsupported network" : "-");
   chainIdLabel.textContent = state.chainId ?? "-";
   connectButton.textContent = state.account ? "Disconnect" : "Connect wallet";
