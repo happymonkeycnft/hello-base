@@ -35,3 +35,22 @@ export function getExplorerAddressUrl(chainId, address) {
   const network = getBaseNetwork(chainId);
   return network && address ? `${network.explorerUrl}/address/${address}` : null;
 }
+
+export function getWalletSwitchParams(chainId) {
+  const network = getBaseNetwork(chainId);
+  if (!network) {
+    return null;
+  }
+
+  return {
+    chainId: network.chainId,
+    chainName: network.name,
+    nativeCurrency: network.nativeCurrency,
+    rpcUrls: [network.rpcUrl],
+    blockExplorerUrls: [network.explorerUrl],
+  };
+}
+
+export function getSupportedBaseNetworks() {
+  return Object.values(BASE_NETWORKS);
+}
