@@ -1,7 +1,12 @@
 import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./baseNetworks.js";
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
-import { isValidTransactionHash, normalizeTransactionHash } from "./transactions.js";
+import {
+  formatTransactionValue,
+  getExplorerTransactionUrl,
+  isValidTransactionHash,
+  normalizeTransactionHash,
+} from "./transactions.js";
 
 const state = {
   account: null,
@@ -16,6 +21,8 @@ const state = {
   transactionError: "",
   transactionHash: "",
   transactionMessage: "Enter a Base transaction hash.",
+  transaction: null,
+  isLoadingTransaction: false,
 };
 
 const connectButton = document.querySelector("#connectButton");
@@ -90,12 +97,23 @@ function render() {
 
   transactionMessage.textContent = state.transactionError || state.transactionMessage;
   transactionMessage.classList.toggle("is-error", Boolean(state.transactionError));
-  transactionStatus.textContent = "-";
-  transactionBlock.textContent = "-";
-  transactionFrom.textContent = "-";
-  transactionTo.textContent = "-";
-  transactionValue.textContent = "-";
-  transactionExplorer.textContent = "-";
+  transactionStatus.textContent = state.isLoadingTransaction ? "Loading..." : "-";
+  transactionBlock.textContent = state.transaction?.blockNumber ?? "-";
+  transactionFrom.textContent = state.transaction?.from ?? "-";
+  transactionTo.textContent = state.transaction?.to ?? "-";
+  transactionValue.textContent = formatTransactionValue(state.transaction);
+  transactionExplorer.textContent = "";
+  const txUrl = getExplorerTransactionUrl(state.chainId, state.transactionHash);
+  if (txUrl && state.transaction) {
+    const link = document.createElement("a");
+    link.href = txUrl;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.textContent = "Open in BaseScan";
+    transactionExplorer.append(link);
+  } else {
+    transactionExplorer.textContent = "-";
+  }
 }
 
 function setProviderError(error, fallback) {
@@ -204,6 +222,47 @@ async function switchNetwork(chainId) {
   await Promise.all([refreshLatestBlock(), refreshBalance()]);
 }
 
+async function lookupTransaction(hash) {
+  const baseNetwork = getBaseNetwork(state.chainId);
+  if (!hasInjectedWallet()) {
+    state.transactionError = "Connect a wallet provider before looking up transactions.";
+    state.transaction = null;
+    render();
+    return;
+  }
+
+  if (!baseNetwork) {
+    state.transactionError = "Switch to Base or Base Sepolia before looking up transactions.";
+    state.transaction = null;
+    render();
+    return;
+  }
+
+  state.isLoadingTransaction = true;
+  state.transactionError = "";
+  state.transactionMessage = "Looking up transaction...";
+  state.transaction = null;
+  render();
+
+  try {
+    const transaction = await window.ethereum.request({
+      method: "eth_getTransactionByHash",
+      params: [hash],
+    });
+
+    state.transaction = transaction;
+    state.transactionMessage = transaction
+      ? "Transaction loaded from wallet provider."
+      : "Transaction not found on the selected Base network.";
+  } catch (error) {
+    state.transaction = null;
+    state.transactionError = getProviderErrorMessage(error, "Unable to look up transaction");
+  } finally {
+    state.isLoadingTransaction = false;
+    render();
+  }
+}
+
 async function connectWallet() {
   if (!hasInjectedWallet()) {
     walletStatus.textContent = "No injected wallet found";
@@ -265,8 +324,7 @@ transactionForm.addEventListener("submit", (event) => {
   }
 
   state.transactionError = "";
-  state.transactionMessage = "Transaction hash is valid.";
-  render();
+  lookupTransaction(hash);
 });
 
 if (hasInjectedWallet()) {
