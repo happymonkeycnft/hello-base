@@ -1,6 +1,7 @@
 import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./baseNetworks.js";
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
+import { formatAddress } from "./address.js";
 import {
   formatTransactionValue,
   getExplorerTransactionUrl,
@@ -106,8 +107,8 @@ function render() {
       : "-";
   transactionBlock.textContent =
     state.transactionReceipt?.blockNumber ?? state.transaction?.blockNumber ?? "-";
-  transactionFrom.textContent = state.transaction?.from ?? "-";
-  transactionTo.textContent = state.transaction?.to ?? "-";
+  renderAddressLink(transactionFrom, state.transaction?.from);
+  renderAddressLink(transactionTo, state.transaction?.to);
   transactionValue.textContent = formatTransactionValue(state.transaction);
   transactionExplorer.textContent = "";
   const txUrl = getExplorerTransactionUrl(state.chainId, state.transactionHash);
@@ -121,6 +122,24 @@ function render() {
   } else {
     transactionExplorer.textContent = "-";
   }
+}
+
+function renderAddressLink(element, address) {
+  element.textContent = "";
+  const addressUrl = getExplorerAddressUrl(state.chainId, address);
+
+  if (!addressUrl) {
+    element.textContent = address ? formatAddress(address) : "-";
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = addressUrl;
+  link.target = "_blank";
+  link.rel = "noreferrer";
+  link.textContent = formatAddress(address);
+  link.title = address;
+  element.append(link);
 }
 
 function setProviderError(error, fallback) {
