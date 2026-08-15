@@ -185,6 +185,11 @@ function setProviderError(error, fallback) {
   render();
 }
 
+function clearTokenResult() {
+  state.tokenMetadata = null;
+  state.tokenBalance = null;
+}
+
 async function refreshChain() {
   if (!hasInjectedWallet()) {
     state.chainId = null;
@@ -350,23 +355,21 @@ async function lookupTokenMetadata(address) {
   const baseNetwork = getBaseNetwork(state.chainId);
   if (!hasInjectedWallet()) {
     state.tokenError = "Connect a wallet provider before looking up tokens.";
-    state.tokenMetadata = null;
-    state.tokenBalance = null;
+    clearTokenResult();
     render();
     return;
   }
 
   if (!state.account) {
     state.tokenError = "Connect a wallet before checking token balances.";
-    state.tokenMetadata = null;
-    state.tokenBalance = null;
+    clearTokenResult();
     render();
     return;
   }
 
   if (!baseNetwork) {
     state.tokenError = "Switch to Base or Base Sepolia before looking up tokens.";
-    state.tokenMetadata = null;
+    clearTokenResult();
     render();
     return;
   }
@@ -374,7 +377,7 @@ async function lookupTokenMetadata(address) {
   state.isLoadingToken = true;
   state.tokenError = "";
   state.tokenMessage = "Loading token metadata...";
-  state.tokenMetadata = null;
+  clearTokenResult();
   render();
 
   try {
@@ -398,8 +401,7 @@ async function lookupTokenMetadata(address) {
     state.tokenBalance = decodeUint256(balanceResult);
     state.tokenMessage = "Token balance loaded.";
   } catch (error) {
-    state.tokenMetadata = null;
-    state.tokenBalance = null;
+    clearTokenResult();
     state.tokenError = getProviderErrorMessage(error, "Unable to load ERC-20 metadata");
   } finally {
     state.isLoadingToken = false;
@@ -483,8 +485,7 @@ tokenForm.addEventListener("submit", (event) => {
   if (!isValidEvmAddress(address)) {
     state.tokenError = "Enter a valid ERC-20 contract address.";
     state.tokenMessage = "";
-    state.tokenMetadata = null;
-    state.tokenBalance = null;
+    clearTokenResult();
     render();
     return;
   }
