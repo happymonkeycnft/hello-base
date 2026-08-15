@@ -186,7 +186,8 @@ dd {
   color: #b42318;
 }
 
-.transaction-grid {
+.transaction-grid,
+.token-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 

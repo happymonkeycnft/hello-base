@@ -108,6 +108,55 @@
           </div>
         </dl>
       </section>
+
+      <section class="panel" aria-labelledby="token-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">ERC-20 Tokens</p>
+            <h2 id="token-title">Inspect Token Balance</h2>
+          </div>
+        </div>
+        <form id="tokenForm" class="lookup-form">
+          <label for="tokenAddress">Token contract address</label>
+          <div class="lookup-row">
+            <input
+              id="tokenAddress"
+              name="tokenAddress"
+              autocomplete="off"
+              placeholder="0x..."
+              spellcheck="false"
+            />
+            <button class="primary-button" type="submit">Check token</button>
+          </div>
+          <p id="tokenMessage" class="form-message">Enter an ERC-20 contract on Base.</p>
+        </form>
+        <dl class="status-grid token-grid">
+          <div>
+            <dt>Name</dt>
+            <dd id="tokenName">-</dd>
+          </div>
+          <div>
+            <dt>Symbol</dt>
+            <dd id="tokenSymbol">-</dd>
+          </div>
+          <div>
+            <dt>Decimals</dt>
+            <dd id="tokenDecimals">-</dd>
+          </div>
+          <div>
+            <dt>Wallet Balance</dt>
+            <dd id="tokenBalance">-</dd>
+          </div>
+          <div>
+            <dt>Contract</dt>
+            <dd id="tokenContract">-</dd>
+          </div>
+          <div>
+            <dt>Network</dt>
+            <dd id="tokenNetwork">-</dd>
+          </div>
+        </dl>
+      </section>
     </main>
     <script type="module" src="./src/app.js"></script>
   </body>
