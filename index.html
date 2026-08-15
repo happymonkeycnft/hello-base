@@ -59,6 +59,55 @@
           </button>
         </div>
       </section>
+
+      <section class="panel" aria-labelledby="transaction-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Transactions</p>
+            <h2 id="transaction-title">Inspect Transaction</h2>
+          </div>
+        </div>
+        <form id="transactionForm" class="lookup-form">
+          <label for="transactionHash">Transaction hash</label>
+          <div class="lookup-row">
+            <input
+              id="transactionHash"
+              name="transactionHash"
+              autocomplete="off"
+              placeholder="0x..."
+              spellcheck="false"
+            />
+            <button class="primary-button" type="submit">Look up</button>
+          </div>
+          <p id="transactionMessage" class="form-message">Enter a Base transaction hash.</p>
+        </form>
+        <dl class="status-grid transaction-grid">
+          <div>
+            <dt>Status</dt>
+            <dd id="transactionStatus">-</dd>
+          </div>
+          <div>
+            <dt>Block</dt>
+            <dd id="transactionBlock">-</dd>
+          </div>
+          <div>
+            <dt>From</dt>
+            <dd id="transactionFrom">-</dd>
+          </div>
+          <div>
+            <dt>To</dt>
+            <dd id="transactionTo">-</dd>
+          </div>
+          <div>
+            <dt>Value</dt>
+            <dd id="transactionValue">-</dd>
+          </div>
+          <div>
+            <dt>Explorer</dt>
+            <dd id="transactionExplorer">-</dd>
+          </div>
+        </dl>
+      </section>
     </main>
     <script type="module" src="./src/app.js"></script>
   </body>
