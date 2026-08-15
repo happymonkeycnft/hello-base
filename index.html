@@ -1,1 +1,49 @@
-@hello-base/index.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hello Base Dashboard</title>
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Base Wallet Activity Dashboard</p>
+        <h1 id="page-title">Hello Base</h1>
+        <p class="summary">
+          Connect a wallet, inspect Base network state, and open verified explorer links.
+        </p>
+      </section>
+
+      <section class="panel" aria-labelledby="wallet-title">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Wallet</p>
+            <h2 id="wallet-title">Connection</h2>
+          </div>
+          <button id="connectButton" class="primary-button" type="button">Connect wallet</button>
+        </div>
+        <dl class="status-grid">
+          <div>
+            <dt>Status</dt>
+            <dd id="walletStatus">Not connected</dd>
+          </div>
+          <div>
+            <dt>Address</dt>
+            <dd id="walletAddress">-</dd>
+          </div>
+          <div>
+            <dt>Network</dt>
+            <dd id="networkName">-</dd>
+          </div>
+          <div>
+            <dt>Chain ID</dt>
+            <dd id="chainId">-</dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
