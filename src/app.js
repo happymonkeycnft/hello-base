@@ -1,14 +1,16 @@
-import { getBaseNetwork, getExplorerAddressUrl } from "./baseNetworks.js";
+import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./baseNetworks.js";
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 
 const state = {
   account: null,
   balance: null,
   chainId: null,
+  errorMessage: "",
   isConnecting: false,
   isLoadingBalance: false,
   isLoadingBlock: false,
   latestBlock: null,
+  pendingSwitchChainId: null,
 };
 
 const connectButton = document.querySelector("#connectButton");
@@ -18,6 +20,7 @@ const networkName = document.querySelector("#networkName");
 const chainIdLabel = document.querySelector("#chainId");
 const ethBalance = document.querySelector("#ethBalance");
 const latestBlock = document.querySelector("#latestBlock");
+const switchButtons = document.querySelectorAll("[data-switch-chain]");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
@@ -29,6 +32,8 @@ function render() {
 
   walletStatus.textContent = state.isConnecting
     ? "Connecting..."
+    : state.errorMessage
+      ? state.errorMessage
     : state.account
       ? "Connected"
       : "Not connected";
@@ -57,6 +62,17 @@ function render() {
       : "-";
   connectButton.textContent = state.account ? "Disconnect" : "Connect wallet";
   connectButton.disabled = state.isConnecting;
+
+  switchButtons.forEach((button) => {
+    const targetChainId = button.dataset.switchChain;
+    button.disabled = !hasInjectedWallet() || state.pendingSwitchChainId === targetChainId;
+    button.textContent =
+      state.pendingSwitchChainId === targetChainId
+        ? "Switching..."
+        : targetChainId === "0x2105"
+          ? "Switch to Base"
+          : "Switch to Base Sepolia";
+  });
 }
 
 async function refreshChain() {
@@ -111,6 +127,47 @@ async function refreshLatestBlock() {
   }
 }
 
+async function switchNetwork(chainId) {
+  if (!hasInjectedWallet()) {
+    state.errorMessage = "No injected wallet found";
+    render();
+    return;
+  }
+
+  const params = getWalletSwitchParams(chainId);
+  if (!params) {
+    state.errorMessage = "Unsupported Base network";
+    render();
+    return;
+  }
+
+  state.pendingSwitchChainId = chainId;
+  state.errorMessage = "";
+  render();
+
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId }],
+    });
+  } catch (error) {
+    if (error?.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [params],
+      });
+    } else {
+      throw error;
+    }
+  } finally {
+    state.pendingSwitchChainId = null;
+    render();
+  }
+
+  await refreshChain();
+  await Promise.all([refreshLatestBlock(), refreshBalance()]);
+}
+
 async function connectWallet() {
   if (!hasInjectedWallet()) {
     walletStatus.textContent = "No injected wallet found";
@@ -145,7 +202,18 @@ connectButton.addEventListener("click", () => {
   }
 
   connectWallet().catch((error) => {
-    walletStatus.textContent = error.message || "Unable to connect wallet";
+    state.errorMessage = error.message || "Unable to connect wallet";
+    render();
+  });
+});
+
+switchButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    switchNetwork(button.dataset.switchChain).catch((error) => {
+      state.pendingSwitchChainId = null;
+      state.errorMessage = error.message || "Unable to switch network";
+      render();
+    });
   });
 });
 
