@@ -1,6 +1,7 @@
 import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./baseNetworks.js";
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
+import { isValidTransactionHash, normalizeTransactionHash } from "./transactions.js";
 
 const state = {
   account: null,
@@ -12,6 +13,9 @@ const state = {
   isLoadingBlock: false,
   latestBlock: null,
   pendingSwitchChainId: null,
+  transactionError: "",
+  transactionHash: "",
+  transactionMessage: "Enter a Base transaction hash.",
 };
 
 const connectButton = document.querySelector("#connectButton");
@@ -22,6 +26,15 @@ const chainIdLabel = document.querySelector("#chainId");
 const ethBalance = document.querySelector("#ethBalance");
 const latestBlock = document.querySelector("#latestBlock");
 const switchButtons = document.querySelectorAll("[data-switch-chain]");
+const transactionForm = document.querySelector("#transactionForm");
+const transactionHashInput = document.querySelector("#transactionHash");
+const transactionMessage = document.querySelector("#transactionMessage");
+const transactionStatus = document.querySelector("#transactionStatus");
+const transactionBlock = document.querySelector("#transactionBlock");
+const transactionFrom = document.querySelector("#transactionFrom");
+const transactionTo = document.querySelector("#transactionTo");
+const transactionValue = document.querySelector("#transactionValue");
+const transactionExplorer = document.querySelector("#transactionExplorer");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
@@ -74,6 +87,15 @@ function render() {
           ? "Switch to Base"
           : "Switch to Base Sepolia";
   });
+
+  transactionMessage.textContent = state.transactionError || state.transactionMessage;
+  transactionMessage.classList.toggle("is-error", Boolean(state.transactionError));
+  transactionStatus.textContent = "-";
+  transactionBlock.textContent = "-";
+  transactionFrom.textContent = "-";
+  transactionTo.textContent = "-";
+  transactionValue.textContent = "-";
+  transactionExplorer.textContent = "-";
 }
 
 function setProviderError(error, fallback) {
@@ -227,6 +249,24 @@ switchButtons.forEach((button) => {
       setProviderError(error, "Unable to switch network");
     });
   });
+});
+
+transactionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const hash = normalizeTransactionHash(transactionHashInput.value);
+  state.transactionHash = hash;
+
+  if (!isValidTransactionHash(hash)) {
+    state.transactionError = "Enter a valid 66-character transaction hash.";
+    state.transactionMessage = "";
+    render();
+    return;
+  }
+
+  state.transactionError = "";
+  state.transactionMessage = "Transaction hash is valid.";
+  render();
 });
 
 if (hasInjectedWallet()) {

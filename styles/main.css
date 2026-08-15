@@ -182,6 +182,10 @@ dd {
   color: var(--muted);
 }
 
+.form-message.is-error {
+  color: #b42318;
+}
+
 .transaction-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
