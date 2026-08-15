@@ -9,6 +9,7 @@ Base Wallet Activity Dashboard for exploring wallet state on Base networks.
 - Show connected account, chain ID, and network status.
 - Link supported Base wallet addresses to the matching BaseScan explorer.
 - Look up Base transaction hashes and inspect status, block, participants, value, and explorer links.
+- Look up ERC-20 token metadata and connected-wallet balances on Base networks.
 - Validate EVM wallet addresses with Node test coverage.
 - Validate transaction hashes before making wallet provider RPC requests.
 
@@ -32,6 +33,10 @@ Open `index.html` in a browser with an injected wallet to try the dashboard loca
 ## Transaction Lookup
 
 Use the transaction inspector after connecting a wallet provider and switching to Base or Base Sepolia. The dashboard validates hash format before making RPC requests, shows not-found responses clearly, and reports wallet/provider errors without exposing credentials.
+
+## ERC-20 Token Lookup
+
+Connect a wallet, switch to Base or Base Sepolia, and enter an ERC-20 contract address. The dashboard validates the address, reads `name()`, `symbol()`, `decimals()`, and `balanceOf(address)`, formats balances with token decimals, and clears stale results when a contract does not expose standard ERC-20 metadata.
 
 ## Development Notes
 
