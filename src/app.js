@@ -2,7 +2,14 @@ import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
 import { formatAddress, isValidEvmAddress } from "./address.js";
-import { ERC20_CALLS, decodeStringResult, decodeUint8 } from "./erc20.js";
+import {
+  ERC20_CALLS,
+  decodeStringResult,
+  decodeUint256,
+  decodeUint8,
+  encodeBalanceOf,
+  formatTokenBalance,
+} from "./erc20.js";
 import {
   formatTransactionValue,
   getExplorerTransactionUrl,
@@ -147,7 +154,10 @@ function render() {
   tokenName.textContent = state.isLoadingToken ? "Loading..." : state.tokenMetadata?.name ?? "-";
   tokenSymbol.textContent = state.tokenMetadata?.symbol ?? "-";
   tokenDecimals.textContent = state.tokenMetadata?.decimals?.toString() ?? "-";
-  tokenBalance.textContent = state.tokenBalance ?? "-";
+  tokenBalance.textContent =
+    state.tokenMetadata && state.tokenBalance !== null
+      ? formatTokenBalance(state.tokenBalance, state.tokenMetadata.decimals, state.tokenMetadata.symbol)
+      : "-";
   renderAddressLink(tokenContract, state.tokenAddress);
   tokenNetwork.textContent = baseNetwork?.name ?? "-";
 }
@@ -341,6 +351,15 @@ async function lookupTokenMetadata(address) {
   if (!hasInjectedWallet()) {
     state.tokenError = "Connect a wallet provider before looking up tokens.";
     state.tokenMetadata = null;
+    state.tokenBalance = null;
+    render();
+    return;
+  }
+
+  if (!state.account) {
+    state.tokenError = "Connect a wallet before checking token balances.";
+    state.tokenMetadata = null;
+    state.tokenBalance = null;
     render();
     return;
   }
@@ -375,9 +394,12 @@ async function lookupTokenMetadata(address) {
     }
 
     state.tokenMetadata = metadata;
-    state.tokenMessage = "Token metadata loaded.";
+    const balanceResult = await callContract(address, encodeBalanceOf(state.account));
+    state.tokenBalance = decodeUint256(balanceResult);
+    state.tokenMessage = "Token balance loaded.";
   } catch (error) {
     state.tokenMetadata = null;
+    state.tokenBalance = null;
     state.tokenError = getProviderErrorMessage(error, "Unable to load ERC-20 metadata");
   } finally {
     state.isLoadingToken = false;
