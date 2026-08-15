@@ -8,7 +8,9 @@ Base Wallet Activity Dashboard for exploring wallet state on Base networks.
 - Detect Base mainnet and Base Sepolia from the connected wallet.
 - Show connected account, chain ID, and network status.
 - Link supported Base wallet addresses to the matching BaseScan explorer.
+- Look up Base transaction hashes and inspect status, block, participants, value, and explorer links.
 - Validate EVM wallet addresses with Node test coverage.
+- Validate transaction hashes before making wallet provider RPC requests.
 
 ## Supported Networks
 
@@ -26,6 +28,10 @@ npm run build
 ```
 
 Open `index.html` in a browser with an injected wallet to try the dashboard locally.
+
+## Transaction Lookup
+
+Use the transaction inspector after connecting a wallet provider and switching to Base or Base Sepolia. The dashboard validates hash format before making RPC requests, shows not-found responses clearly, and reports wallet/provider errors without exposing credentials.
 
 ## Development Notes
 
