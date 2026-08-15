@@ -1,0 +1,1 @@
+@hello-base/scripts/check-static-assets.mjs
