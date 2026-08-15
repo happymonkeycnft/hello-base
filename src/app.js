@@ -1,25 +1,45 @@
+import { getBaseNetwork } from "./baseNetworks.js";
+
 const state = {
   account: null,
+  chainId: null,
   isConnecting: false,
 };
 
 const connectButton = document.querySelector("#connectButton");
 const walletStatus = document.querySelector("#walletStatus");
 const walletAddress = document.querySelector("#walletAddress");
+const networkName = document.querySelector("#networkName");
+const chainIdLabel = document.querySelector("#chainId");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
 }
 
 function render() {
+  const baseNetwork = getBaseNetwork(state.chainId);
+
   walletStatus.textContent = state.isConnecting
     ? "Connecting..."
     : state.account
       ? "Connected"
       : "Not connected";
   walletAddress.textContent = state.account ?? "-";
+  networkName.textContent = baseNetwork?.name ?? (state.chainId ? "Unsupported network" : "-");
+  chainIdLabel.textContent = state.chainId ?? "-";
   connectButton.textContent = state.account ? "Disconnect" : "Connect wallet";
   connectButton.disabled = state.isConnecting;
+}
+
+async function refreshChain() {
+  if (!hasInjectedWallet()) {
+    state.chainId = null;
+    render();
+    return;
+  }
+
+  state.chainId = await window.ethereum.request({ method: "eth_chainId" });
+  render();
 }
 
 async function connectWallet() {
@@ -34,6 +54,7 @@ async function connectWallet() {
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     state.account = accounts[0] ?? null;
+    await refreshChain();
   } finally {
     state.isConnecting = false;
     render();
@@ -62,6 +83,7 @@ if (hasInjectedWallet()) {
     .then((accounts) => {
       state.account = accounts[0] ?? null;
       render();
+      return refreshChain();
     })
     .catch(() => {
       render();
@@ -69,6 +91,11 @@ if (hasInjectedWallet()) {
 
   window.ethereum.on?.("accountsChanged", (accounts) => {
     state.account = accounts[0] ?? null;
+    render();
+  });
+
+  window.ethereum.on?.("chainChanged", (chainId) => {
+    state.chainId = chainId;
     render();
   });
 }
