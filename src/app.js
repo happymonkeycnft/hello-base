@@ -1,5 +1,5 @@
 import { getBaseNetwork, getExplorerAddressUrl } from "./baseNetworks.js";
-import { formatEthBalance } from "./eth.js";
+import { formatEthBalance, hexToDecimalString } from "./eth.js";
 
 const state = {
   account: null,
@@ -7,6 +7,8 @@ const state = {
   chainId: null,
   isConnecting: false,
   isLoadingBalance: false,
+  isLoadingBlock: false,
+  latestBlock: null,
 };
 
 const connectButton = document.querySelector("#connectButton");
@@ -15,6 +17,7 @@ const walletAddress = document.querySelector("#walletAddress");
 const networkName = document.querySelector("#networkName");
 const chainIdLabel = document.querySelector("#chainId");
 const ethBalance = document.querySelector("#ethBalance");
+const latestBlock = document.querySelector("#latestBlock");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
@@ -46,6 +49,11 @@ function render() {
     ? "Loading..."
     : state.account && baseNetwork
       ? formatEthBalance(state.balance)
+      : "-";
+  latestBlock.textContent = state.isLoadingBlock
+    ? "Loading..."
+    : baseNetwork
+      ? hexToDecimalString(state.latestBlock)
       : "-";
   connectButton.textContent = state.account ? "Disconnect" : "Connect wallet";
   connectButton.disabled = state.isConnecting;
@@ -84,6 +92,25 @@ async function refreshBalance() {
   }
 }
 
+async function refreshLatestBlock() {
+  const baseNetwork = getBaseNetwork(state.chainId);
+  if (!hasInjectedWallet() || !baseNetwork) {
+    state.latestBlock = null;
+    render();
+    return;
+  }
+
+  state.isLoadingBlock = true;
+  render();
+
+  try {
+    state.latestBlock = await window.ethereum.request({ method: "eth_blockNumber" });
+  } finally {
+    state.isLoadingBlock = false;
+    render();
+  }
+}
+
 async function connectWallet() {
   if (!hasInjectedWallet()) {
     walletStatus.textContent = "No injected wallet found";
@@ -97,6 +124,7 @@ async function connectWallet() {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     state.account = accounts[0] ?? null;
     await refreshChain();
+    await refreshLatestBlock();
     await refreshBalance();
   } finally {
     state.isConnecting = false;
@@ -127,7 +155,7 @@ if (hasInjectedWallet()) {
     .then((accounts) => {
       state.account = accounts[0] ?? null;
       render();
-      return refreshChain().then(() => refreshBalance());
+      return refreshChain().then(() => Promise.all([refreshLatestBlock(), refreshBalance()]));
     })
     .catch(() => {
       render();
@@ -136,10 +164,12 @@ if (hasInjectedWallet()) {
   window.ethereum.on?.("accountsChanged", (accounts) => {
     state.account = accounts[0] ?? null;
     state.balance = null;
+    state.latestBlock = null;
     render();
-    refreshBalance().catch(() => {
+    Promise.all([refreshLatestBlock(), refreshBalance()]).catch(() => {
       state.balance = null;
       state.isLoadingBalance = false;
+      state.isLoadingBlock = false;
       render();
     });
   });
@@ -147,10 +177,12 @@ if (hasInjectedWallet()) {
   window.ethereum.on?.("chainChanged", (chainId) => {
     state.chainId = chainId;
     state.balance = null;
+    state.latestBlock = null;
     render();
-    refreshBalance().catch(() => {
+    Promise.all([refreshLatestBlock(), refreshBalance()]).catch(() => {
       state.balance = null;
       state.isLoadingBalance = false;
+      state.isLoadingBlock = false;
       render();
     });
   });
