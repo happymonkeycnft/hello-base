@@ -25,6 +25,7 @@ const state = {
   transactionMessage: "Enter a Base transaction hash.",
   transaction: null,
   transactionReceipt: null,
+  transactionLookupAttempted: false,
   isLoadingTransaction: false,
 };
 
@@ -104,6 +105,8 @@ function render() {
     ? "Loading..."
     : state.transaction
       ? getReceiptStatus(state.transactionReceipt)
+      : state.transactionLookupAttempted && !state.transactionError
+        ? "Not found"
       : "-";
   transactionBlock.textContent =
     state.transactionReceipt?.blockNumber ?? state.transaction?.blockNumber ?? "-";
@@ -271,6 +274,7 @@ async function lookupTransaction(hash) {
   state.transactionMessage = "Looking up transaction...";
   state.transaction = null;
   state.transactionReceipt = null;
+  state.transactionLookupAttempted = true;
   render();
 
   try {
@@ -292,6 +296,7 @@ async function lookupTransaction(hash) {
       : "Transaction not found on the selected Base network.";
   } catch (error) {
     state.transaction = null;
+    state.transactionReceipt = null;
     state.transactionError = getProviderErrorMessage(error, "Unable to look up transaction");
   } finally {
     state.isLoadingTransaction = false;
@@ -355,6 +360,9 @@ transactionForm.addEventListener("submit", (event) => {
   if (!isValidTransactionHash(hash)) {
     state.transactionError = "Enter a valid 66-character transaction hash.";
     state.transactionMessage = "";
+    state.transaction = null;
+    state.transactionReceipt = null;
+    state.transactionLookupAttempted = false;
     render();
     return;
   }
