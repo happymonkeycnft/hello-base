@@ -1,5 +1,6 @@
 import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./baseNetworks.js";
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
+import { getProviderErrorMessage } from "./providerErrors.js";
 
 const state = {
   account: null,
@@ -75,6 +76,11 @@ function render() {
   });
 }
 
+function setProviderError(error, fallback) {
+  state.errorMessage = getProviderErrorMessage(error, fallback);
+  render();
+}
+
 async function refreshChain() {
   if (!hasInjectedWallet()) {
     state.chainId = null;
@@ -102,6 +108,10 @@ async function refreshBalance() {
       method: "eth_getBalance",
       params: [state.account, "latest"],
     });
+    state.errorMessage = "";
+  } catch (error) {
+    state.balance = null;
+    setProviderError(error, "Unable to load ETH balance");
   } finally {
     state.isLoadingBalance = false;
     render();
@@ -121,6 +131,10 @@ async function refreshLatestBlock() {
 
   try {
     state.latestBlock = await window.ethereum.request({ method: "eth_blockNumber" });
+    state.errorMessage = "";
+  } catch (error) {
+    state.latestBlock = null;
+    setProviderError(error, "Unable to load latest block");
   } finally {
     state.isLoadingBlock = false;
     render();
@@ -202,8 +216,7 @@ connectButton.addEventListener("click", () => {
   }
 
   connectWallet().catch((error) => {
-    state.errorMessage = error.message || "Unable to connect wallet";
-    render();
+    setProviderError(error, "Unable to connect wallet");
   });
 });
 
@@ -211,8 +224,7 @@ switchButtons.forEach((button) => {
   button.addEventListener("click", () => {
     switchNetwork(button.dataset.switchChain).catch((error) => {
       state.pendingSwitchChainId = null;
-      state.errorMessage = error.message || "Unable to switch network";
-      render();
+      setProviderError(error, "Unable to switch network");
     });
   });
 });
