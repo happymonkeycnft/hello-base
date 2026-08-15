@@ -1,7 +1,7 @@
 import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./baseNetworks.js";
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
-import { formatAddress } from "./address.js";
+import { formatAddress, isValidEvmAddress } from "./address.js";
 import {
   formatTransactionValue,
   getExplorerTransactionUrl,
@@ -27,6 +27,12 @@ const state = {
   transactionReceipt: null,
   transactionLookupAttempted: false,
   isLoadingTransaction: false,
+  tokenAddress: "",
+  tokenError: "",
+  tokenMessage: "Enter an ERC-20 contract on Base.",
+  tokenMetadata: null,
+  tokenBalance: null,
+  isLoadingToken: false,
 };
 
 const connectButton = document.querySelector("#connectButton");
@@ -46,6 +52,15 @@ const transactionFrom = document.querySelector("#transactionFrom");
 const transactionTo = document.querySelector("#transactionTo");
 const transactionValue = document.querySelector("#transactionValue");
 const transactionExplorer = document.querySelector("#transactionExplorer");
+const tokenForm = document.querySelector("#tokenForm");
+const tokenAddressInput = document.querySelector("#tokenAddress");
+const tokenMessage = document.querySelector("#tokenMessage");
+const tokenName = document.querySelector("#tokenName");
+const tokenSymbol = document.querySelector("#tokenSymbol");
+const tokenDecimals = document.querySelector("#tokenDecimals");
+const tokenBalance = document.querySelector("#tokenBalance");
+const tokenContract = document.querySelector("#tokenContract");
+const tokenNetwork = document.querySelector("#tokenNetwork");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
@@ -125,6 +140,15 @@ function render() {
   } else {
     transactionExplorer.textContent = "-";
   }
+
+  tokenMessage.textContent = state.tokenError || state.tokenMessage;
+  tokenMessage.classList.toggle("is-error", Boolean(state.tokenError));
+  tokenName.textContent = state.isLoadingToken ? "Loading..." : state.tokenMetadata?.name ?? "-";
+  tokenSymbol.textContent = state.tokenMetadata?.symbol ?? "-";
+  tokenDecimals.textContent = state.tokenMetadata?.decimals?.toString() ?? "-";
+  tokenBalance.textContent = state.tokenBalance ?? "-";
+  renderAddressLink(tokenContract, state.tokenAddress);
+  tokenNetwork.textContent = baseNetwork?.name ?? "-";
 }
 
 function renderAddressLink(element, address) {
@@ -369,6 +393,26 @@ transactionForm.addEventListener("submit", (event) => {
 
   state.transactionError = "";
   lookupTransaction(hash);
+});
+
+tokenForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const address = tokenAddressInput.value.trim();
+  state.tokenAddress = address;
+
+  if (!isValidEvmAddress(address)) {
+    state.tokenError = "Enter a valid ERC-20 contract address.";
+    state.tokenMessage = "";
+    state.tokenMetadata = null;
+    state.tokenBalance = null;
+    render();
+    return;
+  }
+
+  state.tokenError = "";
+  state.tokenMessage = "Token address is valid.";
+  render();
 });
 
 if (hasInjectedWallet()) {
