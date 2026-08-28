@@ -124,6 +124,14 @@ body {
   border-radius: 8px;
 }
 
+.summary-panel {
+  border-color: rgba(20, 88, 245, 0.2);
+}
+
+.summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 dt {
   color: var(--muted);
   font-size: 0.84rem;
@@ -199,6 +207,7 @@ dd {
 
   .panel-header,
   .status-grid,
+  .summary-grid,
   .lookup-row {
     grid-template-columns: 1fr;
   }
