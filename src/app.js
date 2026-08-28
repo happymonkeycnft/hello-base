@@ -2,7 +2,14 @@ import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
 import { formatAddress, isValidEvmAddress } from "./address.js";
-import { formatLastUpdated, getWalletStatusText } from "./uiState.js";
+import {
+  canRefreshBalance,
+  canRefreshBlock,
+  canRefreshToken,
+  formatLastUpdated,
+  getActionLabel,
+  getWalletStatusText,
+} from "./uiState.js";
 import {
   ERC20_CALLS,
   decodeStringResult,
@@ -93,6 +100,7 @@ function hasInjectedWallet() {
 function render() {
   const baseNetwork = getBaseNetwork(state.chainId);
   const addressUrl = getExplorerAddressUrl(state.chainId, state.account);
+  const hasValidTokenAddress = isValidEvmAddress(state.tokenAddress);
 
   walletStatus.textContent = getWalletStatusText(state);
   walletAddress.textContent = "";
@@ -120,13 +128,24 @@ function render() {
       : "-";
   connectButton.textContent = state.account ? "Disconnect" : "Connect wallet";
   connectButton.disabled = state.isConnecting;
-  refreshBalanceButton.disabled = !state.account || !baseNetwork || state.isLoadingBalance;
-  refreshBalanceButton.textContent = state.isLoadingBalance ? "Refreshing ETH..." : "Refresh ETH";
-  refreshBlockButton.disabled = !baseNetwork || state.isLoadingBlock;
-  refreshBlockButton.textContent = state.isLoadingBlock ? "Refreshing block..." : "Refresh block";
-  refreshTokenButton.disabled =
-    !state.account || !baseNetwork || !isValidEvmAddress(state.tokenAddress) || state.isLoadingToken;
-  refreshTokenButton.textContent = state.isLoadingToken ? "Refreshing token..." : "Refresh token";
+  refreshBalanceButton.disabled = !canRefreshBalance(state, baseNetwork);
+  refreshBalanceButton.textContent = getActionLabel(
+    state.isLoadingBalance,
+    "Refresh ETH",
+    "Refreshing ETH...",
+  );
+  refreshBlockButton.disabled = !canRefreshBlock(state, baseNetwork);
+  refreshBlockButton.textContent = getActionLabel(
+    state.isLoadingBlock,
+    "Refresh block",
+    "Refreshing block...",
+  );
+  refreshTokenButton.disabled = !canRefreshToken(state, baseNetwork, hasValidTokenAddress);
+  refreshTokenButton.textContent = getActionLabel(
+    state.isLoadingToken,
+    "Refresh token",
+    "Refreshing token...",
+  );
 
   switchButtons.forEach((button) => {
     const targetChainId = button.dataset.switchChain;
@@ -488,12 +507,20 @@ switchButtons.forEach((button) => {
 });
 
 refreshBalanceButton.addEventListener("click", () => {
+  if (!canRefreshBalance(state, getBaseNetwork(state.chainId))) {
+    return;
+  }
+
   refreshBalance().catch((error) => {
     setProviderError(error, "Unable to refresh ETH balance");
   });
 });
 
 refreshBlockButton.addEventListener("click", () => {
+  if (!canRefreshBlock(state, getBaseNetwork(state.chainId))) {
+    return;
+  }
+
   refreshLatestBlock().catch((error) => {
     setProviderError(error, "Unable to refresh latest block");
   });
@@ -541,6 +568,10 @@ refreshTokenButton.addEventListener("click", () => {
   if (!isValidEvmAddress(state.tokenAddress)) {
     state.tokenError = "Enter a valid ERC-20 contract address before refreshing.";
     render();
+    return;
+  }
+
+  if (!canRefreshToken(state, getBaseNetwork(state.chainId), true)) {
     return;
   }
 
