@@ -21,6 +21,28 @@ export function getWalletStatusText(state) {
   return state.account ? "Connected" : "Not connected";
 }
 
+export function canRefreshBalance(state, baseNetwork) {
+  return Boolean(state.account && baseNetwork && !state.isConnecting && !state.isLoadingBalance);
+}
+
+export function canRefreshBlock(state, baseNetwork) {
+  return Boolean(baseNetwork && !state.isLoadingBlock);
+}
+
+export function canRefreshToken(state, baseNetwork, hasValidTokenAddress) {
+  return Boolean(
+    state.account &&
+      baseNetwork &&
+      hasValidTokenAddress &&
+      !state.isConnecting &&
+      !state.isLoadingToken,
+  );
+}
+
+export function getActionLabel(isPending, idleLabel, pendingLabel) {
+  return isPending ? pendingLabel : idleLabel;
+}
+
 export function formatLastUpdated(timestamp) {
   if (!timestamp) {
     return "Never";
