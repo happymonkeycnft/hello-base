@@ -80,6 +80,7 @@ const summaryBalance = document.querySelector("#summaryBalance");
 const summaryBlock = document.querySelector("#summaryBlock");
 const refreshBalanceButton = document.querySelector("#refreshBalanceButton");
 const refreshBlockButton = document.querySelector("#refreshBlockButton");
+const refreshTokenButton = document.querySelector("#refreshTokenButton");
 const summaryUpdated = document.querySelector("#summaryUpdated");
 const networkUpdated = document.querySelector("#networkUpdated");
 const transactionUpdated = document.querySelector("#transactionUpdated");
@@ -123,6 +124,9 @@ function render() {
   refreshBalanceButton.textContent = state.isLoadingBalance ? "Refreshing ETH..." : "Refresh ETH";
   refreshBlockButton.disabled = !baseNetwork || state.isLoadingBlock;
   refreshBlockButton.textContent = state.isLoadingBlock ? "Refreshing block..." : "Refresh block";
+  refreshTokenButton.disabled =
+    !state.account || !baseNetwork || !isValidEvmAddress(state.tokenAddress) || state.isLoadingToken;
+  refreshTokenButton.textContent = state.isLoadingToken ? "Refreshing token..." : "Refresh token";
 
   switchButtons.forEach((button) => {
     const targetChainId = button.dataset.switchChain;
@@ -531,6 +535,16 @@ tokenForm.addEventListener("submit", (event) => {
 
   state.tokenError = "";
   lookupTokenMetadata(address);
+});
+
+refreshTokenButton.addEventListener("click", () => {
+  if (!isValidEvmAddress(state.tokenAddress)) {
+    state.tokenError = "Enter a valid ERC-20 contract address before refreshing.";
+    render();
+    return;
+  }
+
+  lookupTokenMetadata(state.tokenAddress);
 });
 
 if (hasInjectedWallet()) {
