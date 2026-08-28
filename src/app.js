@@ -2,7 +2,7 @@ import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
 import { formatAddress, isValidEvmAddress } from "./address.js";
-import { getWalletStatusText } from "./uiState.js";
+import { formatLastUpdated, getWalletStatusText } from "./uiState.js";
 import {
   ERC20_CALLS,
   decodeStringResult,
@@ -42,6 +42,10 @@ const state = {
   tokenMetadata: null,
   tokenBalance: null,
   isLoadingToken: false,
+  balanceUpdatedAt: null,
+  blockUpdatedAt: null,
+  transactionUpdatedAt: null,
+  tokenUpdatedAt: null,
 };
 
 const connectButton = document.querySelector("#connectButton");
@@ -76,6 +80,10 @@ const summaryBalance = document.querySelector("#summaryBalance");
 const summaryBlock = document.querySelector("#summaryBlock");
 const refreshBalanceButton = document.querySelector("#refreshBalanceButton");
 const refreshBlockButton = document.querySelector("#refreshBlockButton");
+const summaryUpdated = document.querySelector("#summaryUpdated");
+const networkUpdated = document.querySelector("#networkUpdated");
+const transactionUpdated = document.querySelector("#transactionUpdated");
+const tokenUpdated = document.querySelector("#tokenUpdated");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
@@ -171,6 +179,10 @@ function render() {
   summaryBalance.textContent =
     state.account && baseNetwork && state.balance ? formatEthBalance(state.balance) : "-";
   summaryBlock.textContent = baseNetwork ? hexToDecimalString(state.latestBlock) : "-";
+  summaryUpdated.textContent = formatLastUpdated(state.balanceUpdatedAt || state.blockUpdatedAt);
+  networkUpdated.textContent = formatLastUpdated(state.blockUpdatedAt);
+  transactionUpdated.textContent = formatLastUpdated(state.transactionUpdatedAt);
+  tokenUpdated.textContent = formatLastUpdated(state.tokenUpdatedAt);
 }
 
 function renderAddressLink(element, address) {
@@ -228,6 +240,7 @@ async function refreshBalance() {
       method: "eth_getBalance",
       params: [state.account, "latest"],
     });
+    state.balanceUpdatedAt = new Date().toISOString();
     state.errorMessage = "";
   } catch (error) {
     state.balance = null;
@@ -251,6 +264,7 @@ async function refreshLatestBlock() {
 
   try {
     state.latestBlock = await window.ethereum.request({ method: "eth_blockNumber" });
+    state.blockUpdatedAt = new Date().toISOString();
     state.errorMessage = "";
   } catch (error) {
     state.latestBlock = null;
@@ -345,6 +359,7 @@ async function lookupTransaction(hash) {
     state.transactionMessage = transaction
       ? "Transaction loaded from wallet provider."
       : "Transaction not found on the selected Base network.";
+    state.transactionUpdatedAt = new Date().toISOString();
   } catch (error) {
     state.transaction = null;
     state.transactionReceipt = null;
@@ -411,6 +426,7 @@ async function lookupTokenMetadata(address) {
     const balanceResult = await callContract(address, encodeBalanceOf(state.account));
     state.tokenBalance = decodeUint256(balanceResult);
     state.tokenMessage = "Token balance loaded.";
+    state.tokenUpdatedAt = new Date().toISOString();
   } catch (error) {
     clearTokenResult();
     state.tokenError = getProviderErrorMessage(error, "Unable to load ERC-20 metadata");
