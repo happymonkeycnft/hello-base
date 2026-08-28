@@ -2,6 +2,7 @@ import { getBaseNetwork, getExplorerAddressUrl, getWalletSwitchParams } from "./
 import { formatEthBalance, hexToDecimalString } from "./eth.js";
 import { getProviderErrorMessage } from "./providerErrors.js";
 import { formatAddress, isValidEvmAddress } from "./address.js";
+import { getWalletStatusText } from "./uiState.js";
 import {
   ERC20_CALLS,
   decodeStringResult,
@@ -69,6 +70,10 @@ const tokenDecimals = document.querySelector("#tokenDecimals");
 const tokenBalance = document.querySelector("#tokenBalance");
 const tokenContract = document.querySelector("#tokenContract");
 const tokenNetwork = document.querySelector("#tokenNetwork");
+const summaryWallet = document.querySelector("#summaryWallet");
+const summaryNetwork = document.querySelector("#summaryNetwork");
+const summaryBalance = document.querySelector("#summaryBalance");
+const summaryBlock = document.querySelector("#summaryBlock");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
@@ -78,13 +83,7 @@ function render() {
   const baseNetwork = getBaseNetwork(state.chainId);
   const addressUrl = getExplorerAddressUrl(state.chainId, state.account);
 
-  walletStatus.textContent = state.isConnecting
-    ? "Connecting..."
-    : state.errorMessage
-      ? state.errorMessage
-    : state.account
-      ? "Connected"
-      : "Not connected";
+  walletStatus.textContent = getWalletStatusText(state);
   walletAddress.textContent = "";
   if (addressUrl) {
     const link = document.createElement("a");
@@ -160,6 +159,12 @@ function render() {
       : "-";
   renderAddressLink(tokenContract, state.tokenAddress);
   tokenNetwork.textContent = baseNetwork?.name ?? "-";
+
+  summaryWallet.textContent = state.account ? formatAddress(state.account) : "Disconnected";
+  summaryNetwork.textContent = baseNetwork?.name ?? (state.chainId ? "Unsupported" : "-");
+  summaryBalance.textContent =
+    state.account && baseNetwork && state.balance ? formatEthBalance(state.balance) : "-";
+  summaryBlock.textContent = baseNetwork ? hexToDecimalString(state.latestBlock) : "-";
 }
 
 function renderAddressLink(element, address) {
