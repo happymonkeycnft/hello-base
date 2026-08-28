@@ -74,6 +74,8 @@ const summaryWallet = document.querySelector("#summaryWallet");
 const summaryNetwork = document.querySelector("#summaryNetwork");
 const summaryBalance = document.querySelector("#summaryBalance");
 const summaryBlock = document.querySelector("#summaryBlock");
+const refreshBalanceButton = document.querySelector("#refreshBalanceButton");
+const refreshBlockButton = document.querySelector("#refreshBlockButton");
 
 function hasInjectedWallet() {
   return typeof window !== "undefined" && Boolean(window.ethereum);
@@ -109,6 +111,10 @@ function render() {
       : "-";
   connectButton.textContent = state.account ? "Disconnect" : "Connect wallet";
   connectButton.disabled = state.isConnecting;
+  refreshBalanceButton.disabled = !state.account || !baseNetwork || state.isLoadingBalance;
+  refreshBalanceButton.textContent = state.isLoadingBalance ? "Refreshing ETH..." : "Refresh ETH";
+  refreshBlockButton.disabled = !baseNetwork || state.isLoadingBlock;
+  refreshBlockButton.textContent = state.isLoadingBlock ? "Refreshing block..." : "Refresh block";
 
   switchButtons.forEach((button) => {
     const targetChainId = button.dataset.switchChain;
@@ -458,6 +464,18 @@ switchButtons.forEach((button) => {
       state.pendingSwitchChainId = null;
       setProviderError(error, "Unable to switch network");
     });
+  });
+});
+
+refreshBalanceButton.addEventListener("click", () => {
+  refreshBalance().catch((error) => {
+    setProviderError(error, "Unable to refresh ETH balance");
+  });
+});
+
+refreshBlockButton.addEventListener("click", () => {
+  refreshLatestBlock().catch((error) => {
+    setProviderError(error, "Unable to refresh latest block");
   });
 });
 
